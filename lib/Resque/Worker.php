@@ -360,8 +360,18 @@ class Resque_Worker
         $this->log(array('message' => 'Starting worker ' . $this, 'data' => array('type' => 'start', 'worker' => (string) $this)), self::LOG_TYPE_INFO);
 
         $this->registerSigHandlers();
-        $this->pruneDeadWorkers();
-        Resque_Event::trigger('beforeFirstFork', $this);
+
+        if(!getenv('WORKER_NO_PRUNE_DEAD_WORKERS') === "TRUE") {
+            $this->log(array('message' => 'Not pruning dead workers ' . $this, 'data' => array('type' => 'start', 'worker' => (string) $this)), self::LOG_TYPE_INFO);
+
+            $this->pruneDeadWorkers();
+        }
+
+        if(!getenv('WORKER_NO_TRIGGER') === "TRUE") {
+            $this->log(array('message' => 'Not triggering event ' . $this, 'data' => array('type' => 'start', 'worker' => (string) $this)), self::LOG_TYPE_INFO);
+            Resque_Event::trigger('beforeFirstFork', $this);
+        }
+
         $this->registerWorker();
     }
 
