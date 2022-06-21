@@ -1,4 +1,8 @@
 <?php
+
+use RenokiCo\PhpK8s\K8s;
+use RenokiCo\PhpK8s\KubernetesCluster;
+
 require_once dirname(__FILE__) . '/Event.php';
 require_once dirname(__FILE__) . '/Job/Status.php';
 require_once dirname(__FILE__) . '/Job/DontPerform.php';
@@ -32,6 +36,11 @@ class Resque_Job
 	 */
 	private $instance;
 
+    /**
+     * @var KubernetesCluster|null
+     */
+    private $k8sCluster = null;
+
 	/**
 	 * Instantiate a new instance of a job.
 	 *
@@ -42,6 +51,7 @@ class Resque_Job
 	{
 		$this->queue = $queue;
 		$this->payload = $payload;
+        $this->k8sCluster = KubernetesCluster::inClusterConfiguration();
 	}
 
 	/**
@@ -188,7 +198,11 @@ class Resque_Job
 	 */
 	public function perform()
 	{
-		$instance = $this->getInstance();
+		if ($this->k8sCluster) {
+            $this->createK8sJob();
+        }
+
+        $instance = $this->getInstance();
 		try {
 			Resque_Event::trigger('beforePerform', $this);
 
@@ -265,5 +279,28 @@ class Resque_Job
 					'args' => !empty($this->payload['args']) ? $this->payload['args'] : ''
 				));
 	}
+
+    private function createK8sJob() {
+        $workerClass = $this->payload['class'];
+        $arguments = $this->getArguments();
+        $jobName = 'worker-job-' . time();
+        $container = K8s::container()
+            ->setName($jobName)
+            ->setImage('us.gcr.io/verdant-bulwark-278/bm-backend:US45078-prod-workers-autoscaling-2')
+            ->setCommand(array('php',  $workerClass, $arguments));
+
+        $pod = K8s::pod()
+            ->setName($jobName)
+            ->setLabels(array('job-name' => $jobName))
+            ->setContainers(array($container))
+            ->restartOnFailure();
+
+        $job = $this->k8sCluster
+            ->job()
+            ->setName($jobName)
+            ->setSelectors(array('matchLabels' => array('job-name' => $jobName)))
+            ->setTemplate($pod)
+            ->create();
+    }
 }
 
