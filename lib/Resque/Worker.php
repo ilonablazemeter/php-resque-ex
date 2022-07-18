@@ -1,7 +1,4 @@
 <?php
-
-use RenokiCo\PhpK8s\KubernetesCluster;
-
 require_once dirname(__FILE__) . '/Stat.php';
 require_once dirname(__FILE__) . '/Event.php';
 require_once dirname(__FILE__) . '/Job.php';
@@ -98,11 +95,6 @@ class Resque_Worker
     protected $logger = null;
 
     /**
-     * @var KubernetesCluster|null
-     */
-    protected $k8sCluster = null;
-
-    /**
      * Return all workers known to Resque as instantiated instances.
      * @return array
      */
@@ -186,7 +178,6 @@ class Resque_Worker
         }
         $this->hostname = $hostname;
         $this->id = $this->hostname . ':'.getmypid() . ':' . implode(',', $this->queues);
-        $this->k8sCluster = KubernetesCluster::inClusterConfiguration();
     }
 
     /**
