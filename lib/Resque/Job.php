@@ -212,6 +212,25 @@ class Resque_Job
 		return true;
 	}
 
+    /**
+     * Calling for remote job execution in k8s job
+     *
+     * @return bool
+     * @throws Resque_Exception
+     */
+    public function performAsynch() {
+        $instance = $this->getInstance();
+        try {
+            Resque_Event::trigger('beforePerformAsynch', $this);
+            $instance->performAsync();
+            Resque_Event::trigger('afterPerformAsynch', $this);
+        } catch(Resque_Job_DontPerform $e) {
+            return false;
+        }
+
+        return true;
+    }
+
 	/**
 	 * Mark the current job as having failed.
 	 *
