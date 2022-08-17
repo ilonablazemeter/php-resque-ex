@@ -455,11 +455,12 @@ class Resque_Worker
     }
 
     public function shutdownGraceful() {
+        $this->log(array('message' => 'Exiting...shutdownGraceful', 'data' => array('type' => 'shutdownGraceful')), self::LOG_TYPE_INFO);
         $this->shutdown();
         $startTime = time();
         while ($this->child) {
             if (time() - $startTime > 240) {
-                $this->log(array('message' => 'Time from shutdown', 'data' => array('time' => (time() - $startTime))), self::LOG_TYPE_INFO);
+                $this->log(array('message' => 'Time from shutdown: ' . (time() - $startTime), 'data' => array('time' => (time() - $startTime))), self::LOG_TYPE_INFO);
                 $this->killChild();
                 break;
             }
@@ -473,6 +474,7 @@ class Resque_Worker
      */
     public function shutdownNow()
     {
+        $this->log(array('message' => 'Exiting...shutdownNow', 'data' => array('type' => 'shutdownNow')), self::LOG_TYPE_INFO);
         $this->shutdown();
         $this->killChild();
     }
