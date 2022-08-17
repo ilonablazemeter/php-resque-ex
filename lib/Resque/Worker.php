@@ -275,7 +275,7 @@ class Resque_Worker
         $startTime = microtime(true);
         try {
             Resque_Event::trigger('afterFork', $job);
-            $job->performAsynch();
+            $job->perform();
             $this->log(array('message' => 'done ID:' . $job->payload['id'], 'data' => array('type' => 'done', 'job_id' => $job->payload['id'], 'time' => round(microtime(true) - $startTime, 3) * 1000)), self::LOG_TYPE_INFO);
         } catch (Exception $e) {
             $this->log(array('message' => $job . ' failed: ' . $e->getMessage(), 'data' => array('type' => 'fail', 'log' => $e->getMessage(), 'job_id' => $job->payload['id'], 'time' => round(microtime(true) - $startTime, 3) * 1000)), self::LOG_TYPE_ERROR);
@@ -407,7 +407,7 @@ class Resque_Worker
         declare(ticks = 1);
         pcntl_signal(SIGTERM, array($this, 'shutDownNow'));
         pcntl_signal(SIGINT, array($this, 'shutDownNow'));
-        pcntl_signal(SIGQUIT, array($this, 'shutdown'));
+        pcntl_signal(SIGQUIT, array($this, 'shutdownGraceful'));
         pcntl_signal(SIGUSR1, array($this, 'killChild'));
         pcntl_signal(SIGUSR2, array($this, 'pauseProcessing'));
         pcntl_signal(SIGCONT, array($this, 'unPauseProcessing'));
@@ -452,6 +452,18 @@ class Resque_Worker
     {
         $this->shutdown = true;
         $this->log(array('message' => 'Exiting...', 'data' => array('type' => 'shutdown')), self::LOG_TYPE_INFO);
+    }
+
+    public function shutdownGraceful() {
+        $this->shutdown();
+        $startTime = time();
+        while ($this->child) {
+            if (time() - $startTime > 270) {
+                $this->killChild();
+                break;
+            }
+            sleep(1);
+        }
     }
 
     /**
