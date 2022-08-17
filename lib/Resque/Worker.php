@@ -458,7 +458,8 @@ class Resque_Worker
         $this->shutdown();
         $startTime = time();
         while ($this->child) {
-            if (time() - $startTime > 270) {
+            if (time() - $startTime > 240) {
+                $this->log(array('message' => 'Time from shutdown', 'data' => array('time' => (time() - $startTime))), self::LOG_TYPE_INFO);
                 $this->killChild();
                 break;
             }
@@ -553,10 +554,12 @@ class Resque_Worker
     public function unregisterWorker()
     {
         if (is_object($this->currentJob)) {
+            $this->log(array('message' => 'Set current job as failed', 'data' => array('job' => $this->currentJob->payload)), self::LOG_TYPE_INFO);
             $this->currentJob->fail(new Resque_Job_DirtyExitException);
         }
 
         $id = (string)$this;
+        $this->log(array('message' => 'Unregistering worker', 'data' => array('id' => $id)), self::LOG_TYPE_INFO);
         Resque::redis()->srem('workers', $id);
         Resque::redis()->del('worker:' . $id);
         Resque::redis()->del('worker:' . $id . ':started');
