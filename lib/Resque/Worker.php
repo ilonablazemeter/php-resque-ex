@@ -405,13 +405,13 @@ class Resque_Worker
         }
 
         declare(ticks = 1);
-        pcntl_signal(SIGTERM, array($this, 'shutDownNow'));
-        pcntl_signal(SIGINT, array($this, 'shutDownNow'));
-        pcntl_signal(SIGQUIT, array($this, 'shutdownGraceful'));
-        pcntl_signal(SIGUSR1, array($this, 'killChild'));
-        pcntl_signal(SIGUSR2, array($this, 'pauseProcessing'));
-        pcntl_signal(SIGCONT, array($this, 'unPauseProcessing'));
-        pcntl_signal(SIGPIPE, array($this, 'reestablishRedisConnection'));
+        pcntl_signal(SIGTERM, array(&$this, 'shutDownNow'));
+        pcntl_signal(SIGINT, array(&$this, 'shutDownNow'));
+        pcntl_signal(SIGQUIT, array(&$this, 'shutdownGraceful'));
+        pcntl_signal(SIGUSR1, array(&$this, 'killChild'));
+        pcntl_signal(SIGUSR2, array(&$this, 'pauseProcessing'));
+        pcntl_signal(SIGCONT, array(&$this, 'unPauseProcessing'));
+        pcntl_signal(SIGPIPE, array(&$this, 'reestablishRedisConnection'));
         $this->log(array('message' => 'Registered signals', 'data' => array('type' => 'signal')), self::LOG_TYPE_DEBUG);
     }
 
